@@ -59,3 +59,41 @@ function drutube_misc_field_formatter_view($entity_type, $entity, $field, $insta
   }
   return $element;
 }
+
+/**
+ * Implements hook_query_TAG_alter() for search_api_db_search for partial word search possibility.
+ *
+ * @see https://drupal.org/node/1299238#comment-7757405
+ * @see hook_query_TAG_alter()
+ */
+function drutube_misc_query_search_api_db_search_alter(QueryAlterableInterface $query) {
+  $to_like = function(&$conditions) use (&$to_like) {
+    foreach($conditions as $i => $condition) {
+      if (is_int($i)) {
+        if (isset($condition['field']) && is_object($condition['field'])) {
+          $sub_conditions = &$conditions[$i]['field']->conditions();
+          $to_like($sub_conditions);
+        }
+        elseif (isset($condition['value']) && is_object($condition['value'])) {
+          $sub_conditions = &$conditions[$i]['value']->conditions();
+          $to_like($sub_conditions);
+        }
+        elseif ($conditions[$i]['operator'] != 'LIKE' && !is_object($conditions[$i]['value'])) {
+          $conditions[$i]['value'] = '%' . db_like($conditions[$i]['value']) . '%';
+          $conditions[$i]['operator'] = 'LIKE';
+        }
+      }
+    }
+  };
+  $query->distinct();
+  $tables = &$query->getTables();
+  if (isset($tables['t']['table'])) {
+    $conditions = &$query->conditions();
+  }
+  elseif (isset($tables['t']['table']) && is_object($tables['t']['table'])) {
+    $conditions = &$tables['t']['table']->conditions();
+  }
+  if (isset($conditions)) {
+    $to_like($conditions);
+  }
+}
