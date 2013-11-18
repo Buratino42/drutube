@@ -7,7 +7,7 @@
  */
 class MediaInternetYandexHandler extends MediaInternetBaseHandler {
   public function parse($embedCode) {
-    if (preg_match('#video.yandex.ru/users/\w+/view/\d+#i', $embedCode)) {
+    if (preg_match('#video.yandex.ru/users/[^/]+/view/\d+#i', $embedCode)) {
       $page = file_get_contents($embedCode);
       if (preg_match('#http://static.video.yandex.ru/lite/([^/]+)/([^/]+)/#i', $page, $matches)) {
         return file_stream_wrapper_uri_normalize('yandex://u/' . $matches[1] . '/v/' . $matches[2]);
